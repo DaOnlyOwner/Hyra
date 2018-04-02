@@ -6,12 +6,17 @@
 
 int SourceReader::Eat() {
     if (!good()) return -1;
-    return text[where++];
+    return text[++where];
 }
 
 int SourceReader::Peek() {
-    if (where+1 < text.size()) return -1;
+    if (!good()) return -1;
     return text[where+1];
+}
+
+int SourceReader::Current() {
+    if(where < 0 || where >= text.size()-1) return -1;
+    return text[where];
 }
 
 

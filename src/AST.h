@@ -2,8 +2,8 @@
 
 #include <memory>
 #include <string>
-#include "CommonSyntaxNotations.h"
 #include "stdio.h"
+#include "TokenDefinitions.h"
 
 #define MAKE_NODE(type, args...) std::make_unique< type >(args)
 #define NODE_TYPE(type) std::unique_ptr< type >
@@ -13,22 +13,31 @@ namespace Ast {
 
 
     struct Node {
+        Tokens::Type TokenType;
         virtual ~Node() = default;
     };
 
-    struct Expr : Node {
+    struct Expr : Node
+    {
+
+    };
+
+    struct InvalidExpr : Expr
+    {
 
     };
 
     struct BinaryExpr : Expr
     {
         NODE_TYPE(Expr) Lhs, Rhs;
-        OperatorType Operator;
+    };
+
+    struct UnaryExpr : Expr
+    {
+        NODE_TYPE(Expr) Mid;
     };
 
     struct LiteralExpr : Expr {
-        LiteralExpr(const std::string &Literal, LiteralType Type) : Literal(Literal), Type(Type) {}
         std::string Literal;
-        LiteralType Type;
     };
 }

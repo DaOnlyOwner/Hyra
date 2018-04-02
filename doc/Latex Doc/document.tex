@@ -1,0 +1,48 @@
+\documentclass[]{article}
+\usepackage[utf8]{inputenc}
+
+%opening
+\title{The programming language: Hyra}
+\author{DaOnlyOwner}
+
+\begin{document}
+
+\maketitle
+
+\section{Design Philosophy}
+Hyra is a programming language that was born because I love C++ ( $\geq$ 11) and Python (and Rust). C++ for being fast while still maintaining some sort of comfort, at least with newer versions of C++. And Python for its simplicity and syntactic beauty. Don't even get me started with the standard python library. Python is runnable pseudocode, it's that good. So why a new language? The answer is: I probably just want to design a new one. And the second answer: There are problems with both languages I mentioned. Let's see: 
+\begin{itemize}
+	\item C++ lacks clarity
+	\item C++ lacks a clear vision
+	\item C++ lacks good metaprogramming support
+	\item C++ is complicated
+	\item Python is slow
+	\item Python is managed, thus not feasible for low level programming
+\end{itemize}
+Rust would be the perfect candidate for my new fav language. But it gets in your way with trying to make everything safe without a GC. In my opinion this is horrible and leads to complicated source code. 
+So if Python and C++ had a child which inherits the looks of Python, but the inner workings of C++, with proper metaprogramming capabilities too, I would freak out.
+
+\section{Compiler Implementation}
+\subsection{Features}
+\subsubsection{Boolean Expression chains}
+In maths you can compare values like this: $ 2<4<x>3 == 2<4  \&\& 4<x \&\& x>3 $.
+In Hyra you can do that, too!
+\subsubsection{Functions}
+A function can be called with either f(arg1,arg2,arg3) or arg1,arg2,arg3@f; Looks nicer and fewer things to write.
+At compiletime: arg1,arg2,arg3@\#f;
+Macros !arg1,arg2,arg3@f ! marks the start of a macro
+
+
+\subsection{Syntactic Analysis}
+\subsubsection{Distinctions}
+I am not using a Lexer that parses the regular part of my languages and spits out tokens. I tried out Flex and even wrote my own generator, but I found them not to be useful and very ugly to look at. It's just an preprocessing step which can be easily handled inside the grammar itself. Maybe this is slower or maybe not. If I find the time and bootstrap the compiler I can imagine implementing something like a Lexer.
+
+\subsection{Operator Precedence Parsing}
+Note that I refer to "Precedence" as "Binding". So + has a lower precedence than * because its binding is weaker;
+The POC compiler of Hyra implements a simple Precedence Climbing algorithm. The idea of this algorithm is to treat each expression as a list of nested subexpressions and atoms. The operators have the same precedence and are right associative. For example an expression could look like this: $ A + B - C + ...$, where A, B and C are nested subexpressions whose operators have higher precedence which "holds" the subexpression together. With that in mind, parsing is easy: We parse atoms and operators, inductively building a syntax tree as long as we come across an operator with higher or lower precedence. In the first case we call the algorithm recursively ensuring that the subexpression is parsed correctly. In the other case we just return the parsed tree because the operator is not strong enough to tie the next operand. 
+   
+\end{document}
+
+
+
+

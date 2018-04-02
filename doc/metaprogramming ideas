@@ -1,0 +1,2 @@
+Hyra Metaprogramming ideas:
+Syntactic (Rust macros), Creational (CTE + AST modification), Structural (metaclasses)
