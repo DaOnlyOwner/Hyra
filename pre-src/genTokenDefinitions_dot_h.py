@@ -1,32 +1,34 @@
-import io
+#import io
 
-def writeFile(namespaceName, tokens, tokenInformationVars):
-    outText = genAll(namespaceName,tokens,tokenInformationVars)
-    with open("../src/TokenDefinitions.h","w") as f:
-        f.write(outText)
-def genAll(namespaceName, tokens, tokenInformationVars):
-    return genTop() + genNamespace(namespaceName, tokens) + "\n" + genTokenInformation(tokenInformationVars)
+#def writeFile(namespaceName, tokens, tokenInformationVars):
+#    outText = genAll(namespaceName,tokens,tokenInformationVars)
+#    with open("../src/TokenDefinitions.h","w") as f:
+#        f.write(outText)
+#def genAll(namespaceName, tokens, tokenInformationVars):
+#    return genTop() + genNamespace(namespaceName, tokens) + "\n" + genTokenInformation(tokenInformationVars)
 
-def genTop():
-    return "#pragma once\n#include <string>\n#include <map>\n"
+#def genTop():
+#    return "#pragma once\n#include <string>\n#include <map>\n"
 
-def genTokenInformation(vars):
-    out = "struct TokenInformation{\n"
-    for var in vars:
-        out += var + ";\n"
-    out += "};"
-    return out
+#def genTokenInformation(vars):
+#    out = "struct TokenInformation{\n"
+#    for var in vars:
+#        out += var + ";\n"
+#    out += "};"
+#    return out
 
 
-def genNamespace(name,tokens):
-    out = "namespace " + name +"{" + genEnum(tokens) + genMapBack(tokens) +"typedef int Type;\n}\n"
-    return out
+#def genNamespace(name,tokens):
+#    out = "namespace " + name +"{\ntypedef int Type;\n" + \
+#          genEnum(tokens) + \
+#          genMapBack(tokens) +"\n}\n"
+#    return out
 
 def genEnum(tokens):
     out = "enum {\n"
-    for token in tokens[0:-1]:
-        out += token + ",\n"
-    out += tokens[-1] + "};\n"
+    for index,token in enumerate(tokens[0:-1]):
+        out += "{0}={1},\n".format(token,index)
+    out += tokens[-1] + "="+str(len(tokens)-1) +  "};\n"
     return out
 
 def genMapBack(tokens):
@@ -36,7 +38,6 @@ def genMapBack(tokens):
     out += "{"+tokens[-1]+', "'+tokens[-1]+'"'+"}\n"
     out+="}; return namesMap[type]; }\n"
     return out
-
 
 tokenList = [
 "KW_if",
@@ -92,4 +93,4 @@ vars = ["Tokens::Type TokenType",
 "size_t LineNumber",
 "size_t ColumnNumber"]
 
-writeFile(name,tokenList,vars)
+print(genEnum(tokenList))

@@ -1,13 +1,19 @@
-#include "HyraLexer.h"
+#include "HyraParser.h"
+#include "TreeVisualizer.h"
+#include <iostream>
+#include <fstream>
 #include <cstdio>
+
 int main()
 {
-    HyraLexer hyraLexer;
-    int counter = 10;
-    while(hyraLexer.Peek().TokenType != Tokens::EOF_ && counter-- != 0)
-    {
-        TokenInformation ti = hyraLexer.Eat();
-        printf("%s: %s\n", ti.Match.c_str(), Tokens::GetName(ti.TokenType).c_str());
-    }
+    std::stringstream stream;
+    stream << std::ifstream("testprogram.hy").rdbuf();
+    std::string in = stream.str();
+    reflex::Input input{in};
+    HyraLexer lexer(input);
+    HyraParser par{std::move(lexer)};
+    auto ast = par.Parse();
+    GraphVizPrinter printer;
+    printer.Start(ast);
     return 0;
 }

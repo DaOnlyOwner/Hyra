@@ -2,42 +2,26 @@
 
 #include <memory>
 #include <string>
-#include "stdio.h"
 #include "TokenDefinitions.h"
+#define DEC_NODE(name) struct name : Node { name (TokenInformation&& info) : Node(std::move(info)){} void Accept(Visitor&) override; void AcceptCustom(Visitor&) override; }
+#define DEC_NODE_CUSTOM(name, def) struct name : Node { name (TokenInformation&& info) : Node(std::move(info)){} void Accept(Visitor&) override; void AcceptCustom(Visitor&) override; def };
 
-#define MAKE_NODE(type, args...) std::make_unique< type >(args)
-#define NODE_TYPE(type) std::unique_ptr< type >
-#define REDIR_NODE(n1, n2) n1 = std::move( n2 )
 
+template<typename T>
+using UPtr = std::unique_ptr<T>;
+class Visitor;
 namespace Ast {
-
-
     struct Node {
-        Tokens::Type TokenType;
+        TokenInformation TokenInfo;
+        Node(TokenInformation&& info) : TokenInfo(std::move(info)){}
         virtual ~Node() = default;
+        virtual void Accept(Visitor& visitor) = 0;
+        virtual void AcceptCustom(Visitor& visitor) = 0;
     };
 
-    struct Expr : Node
-    {
-
-    };
-
-    struct InvalidExpr : Expr
-    {
-
-    };
-
-    struct BinaryExpr : Expr
-    {
-        NODE_TYPE(Expr) Lhs, Rhs;
-    };
-
-    struct UnaryExpr : Expr
-    {
-        NODE_TYPE(Expr) Mid;
-    };
-
-    struct LiteralExpr : Expr {
-        std::string Literal;
-    };
+    DEC_NODE(LiteralExpr);
+    DEC_NODE(InvalidExpr);
+    DEC_NODE_CUSTOM(BinaryExpr, UPtr<Node> Lhs; UPtr<Node> Rhs;)
+    DEC_NODE_CUSTOM(UnaryExpr, UPtr<Node> Mid;)
 }
+using AstNode = UPtr<Ast::Node>;

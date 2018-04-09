@@ -55,22 +55,21 @@
 class HyraLexer : public reflex::AbstractLexer<reflex::Matcher> {
 
 TokenInformation peekTokenInfo;
-TokenInformation currentTokenInfo;
 public:
-const TokenInformation& Eat()
+TokenInformation Eat()
 {
-    currentTokenInfo = peekTokenInfo;
+    auto tmp = peekTokenInfo;
     auto peekToken = lex();
-    peekTokenInfo = {lex(), str(), lineno(), columno()};
-    return currentTokenInfo;
+    peekTokenInfo = {peekToken, str(), lineno(), columno()};
+    return tmp;
 }
 const TokenInformation& Peek()
 {
     return peekTokenInfo;
 }
-const TokenInformation& Current()
+void Init()
 {
-    return currentTokenInfo;
+    Eat();
 }
 
  public:
@@ -81,9 +80,6 @@ const TokenInformation& Current()
     :
       AbstractBaseLexer(input, os)
   {
-
-Eat();
-
   }
   static const int INITIAL = 0;
   virtual int lex();

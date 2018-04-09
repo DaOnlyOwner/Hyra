@@ -1,2 +1,13 @@
 Hyra Metaprogramming ideas:
 Syntactic (Rust macros), Creational (CTE + AST modification), Structural (metaclasses)
+
+super charged expressions, z.B. while expressions:
+resultof while(A): B 
+    ... 
+ist eine expression mit einem Rückgabewert (das ist dann die letze Expression)
+
+!! <- ignoriert alle blanks, newline kann aber auch mit \ ignoriert werden.
+`O´ <- um explizit einen Block zu beginnen
+Syntax kann sich noch verändern
+
+

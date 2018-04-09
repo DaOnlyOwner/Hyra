@@ -51,22 +51,21 @@
 class HyraLexer : public reflex::AbstractLexer<reflex::Matcher> {
 
 TokenInformation peekTokenInfo;
-TokenInformation currentTokenInfo;
 public:
-const TokenInformation& Eat()
+TokenInformation Eat()
 {
-    currentTokenInfo = peekTokenInfo;
+    auto tmp = peekTokenInfo;
     auto peekToken = lex();
-    peekTokenInfo = {lex(), str(), lineno(), columno()};
-    return currentTokenInfo;
+    peekTokenInfo = {peekToken, str(), lineno(), columno()};
+    return tmp;
 }
 const TokenInformation& Peek()
 {
     return peekTokenInfo;
 }
-const TokenInformation& Current()
+void Init()
 {
-    return currentTokenInfo;
+    Eat();
 }
 
  public:
@@ -77,9 +76,6 @@ const TokenInformation& Current()
     :
       AbstractBaseLexer(input, os)
   {
-
-Eat();
-
   }
   static const int INITIAL = 0;
   virtual int lex();
@@ -123,120 +119,120 @@ RET_TOKEN(EOF_);
               out().put(matcher().input());
             }
             break;
-          case 1: // rule at line 33: ^\h+
+          case 1: // rule at line 28: ^\h+
             break;
-          case 2: // rule at line 34: \j
+          case 2: // rule at line 29: \j
 RET_TOKEN(BlockEnd);
             break;
-          case 3: // rule at line 35: if
+          case 3: // rule at line 30: if
 RET_TOKEN(KW_if);
             break;
-          case 4: // rule at line 36: elif
+          case 4: // rule at line 31: elif
 RET_TOKEN(KW_elif);
             break;
-          case 5: // rule at line 37: else
+          case 5: // rule at line 32: else
 RET_TOKEN(KW_else);
             break;
-          case 6: // rule at line 38: while
+          case 6: // rule at line 33: while
 RET_TOKEN(KW_while);
             break;
-          case 7: // rule at line 39: and
+          case 7: // rule at line 34: and
 RET_TOKEN(KW_and);
             break;
-          case 8: // rule at line 40: or
+          case 8: // rule at line 35: or
 RET_TOKEN(KW_or);
             break;
-          case 9: // rule at line 41: xor
+          case 9: // rule at line 36: xor
 RET_TOKEN(KW_xor);
             break;
-          case 10: // rule at line 42: not
+          case 10: // rule at line 37: not
 RET_TOKEN(KW_not);
             break;
-          case 11: // rule at line 43: u8
+          case 11: // rule at line 38: u8
 RET_TOKEN(KW_u8);
             break;
-          case 12: // rule at line 44: u16
+          case 12: // rule at line 39: u16
 RET_TOKEN(KW_u16);
             break;
-          case 13: // rule at line 45: u32
+          case 13: // rule at line 40: u32
 RET_TOKEN(KW_u32);
             break;
-          case 14: // rule at line 46: u64
+          case 14: // rule at line 41: u64
 RET_TOKEN(KW_u64);
             break;
-          case 15: // rule at line 47: f8
+          case 15: // rule at line 42: f8
 RET_TOKEN(KW_f8);
             break;
-          case 16: // rule at line 48: f16
+          case 16: // rule at line 43: f16
 RET_TOKEN(KW_f16);
             break;
-          case 17: // rule at line 49: f32
+          case 17: // rule at line 44: f32
 RET_TOKEN(KW_f32);
             break;
-          case 18: // rule at line 50: s8
+          case 18: // rule at line 45: s8
 RET_TOKEN(KW_s8);
             break;
-          case 19: // rule at line 51: s16
+          case 19: // rule at line 46: s16
 RET_TOKEN(KW_s16);
             break;
-          case 20: // rule at line 52: s32
+          case 20: // rule at line 47: s32
 RET_TOKEN(KW_s32);
             break;
-          case 21: // rule at line 53: s64
+          case 21: // rule at line 48: s64
 RET_TOKEN(KW_s64);
             break;
-          case 22: // rule at line 54: (?:\Q+\E)
+          case 22: // rule at line 49: (?:\Q+\E)
 RET_TOKEN(OP_plus);
             break;
-          case 23: // rule at line 55: (?:\Q-\E)
+          case 23: // rule at line 50: (?:\Q-\E)
 RET_TOKEN(OP_minus);
             break;
-          case 24: // rule at line 56: (?:\Q*\E)
+          case 24: // rule at line 51: (?:\Q*\E)
 RET_TOKEN(OP_times);
             break;
-          case 25: // rule at line 57: (?:\Q/\E)
+          case 25: // rule at line 52: (?:\Q/\E)
 RET_TOKEN(OP_div);
             break;
-          case 26: // rule at line 58: ==
+          case 26: // rule at line 53: ==
 RET_TOKEN(OP_equals);
             break;
-          case 27: // rule at line 59: !=
+          case 27: // rule at line 54: !=
 RET_TOKEN(OP_notEquals);
             break;
-          case 28: // rule at line 60: <=
+          case 28: // rule at line 55: <=
 RET_TOKEN(OP_lesserThan);
             break;
-          case 29: // rule at line 61: >=
+          case 29: // rule at line 56: >=
 RET_TOKEN(OP_greaterThan);
             break;
-          case 30: // rule at line 62: =
+          case 30: // rule at line 57: =
 RET_TOKEN(OP_assign);
             break;
-          case 31: // rule at line 63: :
+          case 31: // rule at line 58: :
 RET_TOKEN(SYM_colon);
             break;
-          case 32: // rule at line 64: [0-9]+\.[0-9]+(?:f8|f16|f32)?
+          case 32: // rule at line 59: [0-9]+\.[0-9]+(?:f8|f16|f32)?
 RET_TOKEN(LIT_float);
             break;
-          case 33: // rule at line 65: [0-9]+(?:i64|i32|i16|i8)?
+          case 33: // rule at line 60: [0-9]+(?:i64|i32|i16|i8)?
 RET_TOKEN(LIT_integer);
             break;
-          case 34: // rule at line 66: [0-9]+(?:f8|f16|f32)?
+          case 34: // rule at line 61: [0-9]+(?:f8|f16|f32)?
 RET_TOKEN(LIT_float);
             break;
-          case 35: // rule at line 67: [0-9A-Z_a-z]+
+          case 35: // rule at line 62: [0-9A-Z_a-z]+
 RET_TOKEN(Identifier);
             break;
-          case 36: // rule at line 68: ^\h*\i
+          case 36: // rule at line 63: ^\h*\i
 RET_TOKEN(BlockStart);
             break;
-          case 37: // rule at line 69: ^\h*\j
+          case 37: // rule at line 64: ^\h*\j
 RET_TOKEN(BlockEnd);
             break;
-          case 38: // rule at line 70: (?:\Q(\E)
+          case 38: // rule at line 65: (?:\Q(\E)
 RET_TOKEN(SYM_lparen);
             break;
-          case 39: // rule at line 71: (?:\Q)\E)
+          case 39: // rule at line 66: (?:\Q)\E)
 RET_TOKEN(SYM_rparen);
             break;
         }

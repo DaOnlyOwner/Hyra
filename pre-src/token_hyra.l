@@ -3,28 +3,23 @@
     #define RET_TOKEN(token) return Tokens:: token
 %}
 
-%init{
-Eat();
-%}
-
 %class{
 TokenInformation peekTokenInfo;
-TokenInformation currentTokenInfo;
 public:
-const TokenInformation& Eat()
+TokenInformation Eat()
 {
-    currentTokenInfo = peekTokenInfo;
+    auto tmp = peekTokenInfo;
     auto peekToken = lex();
-    peekTokenInfo = {lex(), str(), lineno(), columno()};
-    return currentTokenInfo;
+    peekTokenInfo = {peekToken, str(), lineno(), columno()};
+    return tmp;
 }
 const TokenInformation& Peek()
 {
     return peekTokenInfo;
 }
-const TokenInformation& Current()
+void Init()
 {
-    return currentTokenInfo;
+    Eat();
 }
 %}
 
