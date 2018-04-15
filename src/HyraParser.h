@@ -10,30 +10,34 @@ public:
 
     // Helpers
 private:
+    HyraLexer lexer;
     inline TokenInformation eat(){ return lexer.Eat();}
     inline const TokenInformation& peek(){return lexer.Peek();}
 private:
     //  Expressions
-    AstNode pExprChain(AstNode lhs,int minPrec);
-    AstNode pAtomExpr();
-    // Statements
-    AstNode pFuncPrototype();
-    AstNode pFuncDef();
+    AstExpr pExprChain(AstExpr lhs,int minPrec);
+    AstExpr pAtomExpr();
 
+    // Stmts
 private:
-    HyraLexer lexer;
 
-    AstNode pFuncDec();
+    AstStmt pFuncPrototype();
 
-    AstNode pStatement();
+    AstStmt pFuncDef();
 
-    AstNode pControlFlowStatement();
+    AstStmt pFuncDec();
 
-    AstNode pDec_DefStatement();
+    AstStmt pStmt();
 
-    AstNode pStatementExpression();
+    AstStmt pControlFlowStmt();
 
-    AstNode pControlFlowStatements();
+    AstStmt pDec_DefStmt();
 
-    AstNode pIfBlock();
+    AstStmt pStmtExpression();
+
+    AstStmt pIfStmt();
+
+    AstStmt pElifStmt();
+
+    AstStmt pBasicBranchStmt(Tokens::Type type);
 };

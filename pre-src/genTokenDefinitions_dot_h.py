@@ -43,6 +43,7 @@ tokenList = [
 "KW_if",
 "KW_elif",
 "KW_else",
+"KW_for",
 "KW_while",
 "KW_and",
 "KW_or",
@@ -94,3 +95,4 @@ vars = ["Tokens::Type TokenType",
 "size_t ColumnNumber"]
 
 print(genEnum(tokenList))
+print(genMapBack(tokenList))

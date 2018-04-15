@@ -4,6 +4,7 @@
 
 #include "TreeVisualizer.h"
 #include <fstream>
+#include <cstdint>
 
 
 void GraphVizPrinter::Visit(Ast::LiteralExpr& expr)

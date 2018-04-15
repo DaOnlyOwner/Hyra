@@ -1,9 +1,10 @@
 #include "HyraParser.h"
+#include "Error.h"
 
 /* Helper methods */
 
 // Called by pExprChain
-inline void makeLhsToNewRoot(AstNode &lhs, AstNode &rhs, TokenInformation &&newRootInfo)
+inline void makeLhsToNewRoot(AstExpr &lhs, AstExpr &rhs, TokenInformation &&newRootInfo)
 {
     auto tmpRoot = std::make_unique<Ast::BinaryExpr>(std::move(newRootInfo));
     tmpRoot->Rhs =  std::move(rhs);
@@ -16,7 +17,7 @@ AstNode HyraParser::Parse()
     return pExprChain(pAtomExpr(),1);
 }
 // <literal> | '('<ExprChain>')'
-AstNode HyraParser::pAtomExpr() {
+AstExpr HyraParser::pAtomExpr() {
     const TokenInformation& la = peek();
     if (Tokens::IsLit(la.TokenType) || la.TokenType != Tokens::SYM_lparen)
     {
@@ -43,10 +44,10 @@ AstNode HyraParser::pAtomExpr() {
  *  This solution only recurses when it needs.
  *
  */
- AstNode HyraParser::pExprChain(AstNode lhs, int minPrec)
+ AstExpr HyraParser::pExprChain(AstExpr lhs, int minPrec)
  {
      Tokens::Type currentOperatorType = peek().TokenType;
-     AstNode currentAtom;
+     AstExpr currentAtom;
      while (Tokens::IsBinOp(currentOperatorType))
      {
          TokenInformation currentOperator = eat();
@@ -66,7 +67,7 @@ AstNode HyraParser::pAtomExpr() {
              if (Tokens::GetAssoc(peekOperatorType) == Tokens::Assoc::Right)
              {
                  // e.g. A ** B ** C == A ** (B ** C)
-                 AstNode rhs = pExprChain(std::move(currentAtom), minPrec);
+                 AstExpr rhs = pExprChain(std::move(currentAtom), minPrec);
                  makeLhsToNewRoot(lhs, rhs, std::move(currentOperator));
              }
              else
@@ -81,71 +82,120 @@ AstNode HyraParser::pAtomExpr() {
  }
 
 /*
- * Statements
+ * Stmts
  */
 
-// <ControlFlowStatement> | <StatementExpression> | <Dec_DefStatement>
-AstNode HyraParser::pStatement()
+// <ControlFlowStmt> | <StmtExpression> | <Dec_DefStmt>
+AstStmt HyraParser::pStmt()
 {
     Tokens::Type peekType = peek().TokenType;
-    if (Tokens::IsCF(peekType)) return pControlFlowStatement();
-    else if (Tokens::IsDec_Def()) return pDec_DefStatement();
-    else return pStatementExpression();
+    if (Tokens::IsCF(peekType)) return pControlFlowStmt();
+    else if (Tokens::IsDec_Def()) return pDec_DefStmt();
+    else return pStmtExpression();
 }
 
 // <IfBlock> | <ForBlock> | <WhileBlock>
-AstNode HyraParser::pControlFlowStatement()
+AstStmt HyraParser::pControlFlowStmt()
 {
-    TokenInformation cf = eat();
+    TokenInformation cf = peek();
     switch (cf.TokenType)
     {
         case Tokens::KW_if:
-            return pIfBlock();
+            return pIfStmt();
         case Tokens::KW_while:
-            return pWhileBlock();
+            //return pWhileBlock();
         case Tokens::KW_for:
-            return pForBlock();
+            //return pForBlock();
+        default:
+            printf("This shouldnt have happended-.-");
     }
 }
-// "if" (* already parsed in the caller *) <ExprChain>":" <BlockStart> <Statement>+ <BlockEnd> ("elif" <ExprChain>":" <BlockStart> <Statement>* <BlockEnd>)* ("else" ":" <BlockStart> <Statement>* <BlockEnd>?
+// "if" <ExprChain>":" <BlockStart> <Stmt>+ <BlockEnd> <ElifStmt>* ("else" ":" <BlockStart> <Stmt>* <BlockEnd>?
 // TODO: Don't require a new block, it would be nice if I could do something like this: if A: doB() [no newline here]
-AstNode HyraParser::pIfBlock()
+AstStmt HyraParser::pIfStmt()
 {
-     auto condition = pExprChain(pAtomExpr(),1);
-     TokenInformation colonMaybe = eat();
-     if(colonMaybe.TokenType != Tokens::SYM_colon)
-     {
-         printf("Syntax Error in line %d, column %d: Expected a colon after the 'if' keyword.", colonMaybe.LineNumber,colonMaybe.ColumnNumber);
-     }
-
+    eat(); // Eat the 'if'
+    Ast::IfStmt ifStmt;
+    auto condition = pExprChain(pAtomExpr(), 1);
+    ifStmt.Condition = std::move(condition);
+    const TokenInformation &colonMaybe = peek();
+    if (colonMaybe.TokenType != Tokens::SYM_colon)
+    {
+        printf("Syntax Error in line %d, column %d: Expected a colon after the 'if' keyword.", colonMaybe.LineNumber,
+               colonMaybe.ColumnNumber);
+        assert(false);
+    }
+    eat(); // Eat the colon
+    const TokenInformation &blockStartMaybe = peek();
+    if (blockStartMaybe.TokenType != Tokens::BlockStart)
+    {
+        printf("#### SYNTAX ERROR #### in line %lli, column %lli: Wrong intendation or no other symbol to start a new block.\n#### ----- ####");
+    }
+    eat(); // Eat the BlockStart
+    ifStmt.Body.push_back(pStmt());
+    while (peek().TokenType != Tokens::BlockEnd)
+    {
+        ifStmt.Body.push_back(pStmt());
+    }
+    eat(); // Eat the BlockEnd Token
+    const TokenInformation& elif_elseMaybe = peek();
+    while (elif_elseMaybe.TokenType == Tokens::KW_elif) ifStmt.ElifStatements.push_back(pElifStmt());
+    if (elif_elseMaybe.TokenType == Tokens::KW_else) ifStmt.OptElseStatement = pElseStmt();
+    return ifStmt;
 }
 
-
-// "def" <FuncPrototype> <BlockStart> <Statement>* <BlockEnd>
-AstNode HyraParser::pFuncDef()
+// "elif"|"else" <ExprChain>":" <BlockStart> <Stmt>* <BlockEnd>
+AstStmt HyraParser::pBasicBranchStmt(Tokens::Type type)
 {
-    return AstNode();
+    const TokenInformation& elifMaybe = peek();
+    UPtr<Ast::BasicBranchStmt> stmt = std::make_unique();
+    if (peek().TokenType != type)
+    {
+        compilerBug(elifMaybe, "Should not appear on your screen. 'Elif' is optional");
+        exit(-1);
+    }
+    eat(); // Eat the elif kw
+    stmt->Condition = pExprChain(pAtomExpr(),1);
+    if(peek().TokenType != Tokens::SYM_colon)
+    {
+        minorError(peek(), ":", "The colon marks the start of a new block (a new scope)");
+    }
+    else eat(); // Eat the colon
+
+    if(peek().TokenType != Tokens::BlockStart)
+    {
+        indentError(peek());
+    }
+    else eat(); // Eat the block start token
+    while(peek().TokenType == Tokens::BlockEnd) stmt.Body.push_back(pStmt());
+    eat(); // Eat the block end token.
+}
+
+// "def" <FuncPrototype> <BlockStart> <Stmt>* <BlockEnd>
+AstStmt HyraParser::pFuncDef()
+{
+    return AstStmt();
 }
 
 // "dec" <FuncPrototype> ";"
-AstNode HyraParser::pFuncDec()
+AstStmt HyraParser::pFuncDec()
 {
 
 }
 
 // <Identifier> <ArgumentList>
-AstNode HyraParser::pFuncPrototype()
+AstStmt HyraParser::pFuncPrototype()
 {
 
 }
 
-AstNode HyraParser::pDec_DefStatement()
+AstStmt HyraParser::pDec_DefStmt()
 {
-    return AstNode();
+    return AstStmt();
 }
 
-AstNode HyraParser::pStatementExpression()
+AstStmt HyraParser::pStmtExpression()
 {
-    return AstNode();
+    return AstStmt();
 }
 
