@@ -46,9 +46,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Parser\Combinators.fs" />
     <Compile Include="Program.fs" />
     <Content Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Parser\Combinators.fs" />
   </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
 </Project>
