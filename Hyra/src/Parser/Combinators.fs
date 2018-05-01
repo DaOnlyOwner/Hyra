@@ -1,32 +1,57 @@
 module Combinators
 
-type Expected = string
-type FailureMessage = string
-type Got = string
+type Line = uint64
+type Column = uint32
 
-type PositionInfo = {
-    line : string
-    lineno : int
-    colno : int
-}
+type Result<'a> = 
+    | Good of 'a * Input.InputState
+    | Bad
 
+type Parser<'a> = {
+    fn : Input.InputState -> Result<'a>
+    } 
 
-type ErrorInformation = 
-    | Error of Got * Expected * PositionInfo
-    | ExtendedError of Got * Expected * PositionInfo * FailureMessage 
-  
+                
+   
+let bind (parser : Parser<'a>)  (func : 'a -> Parser<'b>) : Parser<'b> =
+    let inner input =
+        match parser.fn input with 
+        | Good (item, newInput) -> newInput |> (item |> func).fn 
+        | Bad -> Bad
+    {fn = inner}
 
-type Result<'valOnGood> = 
-    | Good of 'valOnGood 
-    | Bad of ErrorInformation
+let (>>=) p f = bind p f
 
-type Parser<'valOnGood, 'input> = Parser of ('input -> Result<'valOnGood>) 
-
-let run parser input =
-    let fn = parser
-    fn input
+let ret (a :'a) =
+    let inner input =
+        Good (a,input)
+    {fn=inner}    
     
-    
-    
-    
-    
+let run parser state =
+    parser.fn state
+
+type ParserBuilder() =
+    member this.Bind (parser,func) =
+        bind parser func 
+    member this.Return a = ret a
+         
+        
+let parser = new ParserBuilder()    
+
+
+let andThen p1 p2 = parser {
+    let! res1 = p1
+    let! res2 = p2
+    return (res1,res2)
+    }
+
+let sat pred =
+     let inner state =
+        let item,newState = Input.next state
+        match item with 
+        | Some unwItem -> 
+            if pred item then Good (unwItem, newState)
+            else Bad
+        | None -> Bad
+     {fn=inner}
+
