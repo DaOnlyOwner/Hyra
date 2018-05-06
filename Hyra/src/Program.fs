@@ -1,6 +1,4 @@
-﻿module Main
-
-
+﻿
 open SpecificCombinators
 
 [<EntryPoint>]

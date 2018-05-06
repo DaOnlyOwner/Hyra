@@ -1,4 +1,5 @@
 module Input
+open System
 
 type LineNo = uint64
 type ColumnNo = uint32
@@ -10,13 +11,9 @@ type InputState =  {
     colNo: int
 }
 
-let inputFromStdin =
-    let lines = new ResizeArray<string>()
-    let mutable line = ""
-    while line <> null do
-        line <- System.Console.ReadLine()
-        lines.Add(line)
-    lines.ToArray()
+let inputFromFile file =
+    let lines = System.IO.File.ReadAllLines file 
+    {lines=lines; lineNo=0; colNo=0}
 
 let extract (state : InputState) =
     if state.lineNo >= state.lines.Length then
