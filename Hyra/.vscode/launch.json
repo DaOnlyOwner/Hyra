@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Attach (Mono)",
+            "request": "attach",
+            "type": "mono",
+            "address": "localhost",
+            "port": 55555,
+        
+        },
+            {
+                "name": "Launch (Mono)",
+                "type": "mono",
+                "request": "launch",
+                "internalConsoleOptions": "openOnSessionStart",
+                "program": "${workspaceRoot}/bin/Debug/Hyra.exe",
+                "cwd": "${workspaceRoot}",
+                "console": "internalConsole",
+            }
+    ]
+}
