@@ -2,11 +2,10 @@
 open SpecificCombinators
 
 [<EntryPoint>]
-let main argv = 
+let main _ = 
     let x = satIdentifier
-    let input = Input.inputFromFile @"E:\F#Projects\Hyra\Tests\testprogram.hy"
+    let input = Input.inputFromFile "/home/daonlyowner/testprogram.hy"
     printfn "Result: %A" (Combinators.run x input)
-    System.Console.ReadKey() |> ignore
+    //System.Console.ReadKey() |> ignore
     0
-
 
