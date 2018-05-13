@@ -38,7 +38,9 @@
     <Content Include="packages.config" />
     <Compile Include="src\Parser\Input.fs" />
     <Compile Include="src\Parser\Combinators.fs" />
+    <Compile Include="src\Parser\Error.fs" />
     <Compile Include="src\Parser\SpecificCombinators.fs" />
+    <Compile Include="src\Tests\JsonParser.fs" />
     <Compile Include="src\Program.fs" />
   </ItemGroup>
   <ItemGroup>
