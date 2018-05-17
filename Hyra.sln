@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Hyra", "Hyra\Hyra.fsproj", "{32B5F230-BC6B-443F-9D93-B7B01EF2F4FB}"
 EndProject
 Global
