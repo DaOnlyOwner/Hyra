@@ -37,8 +37,9 @@
     <Compile Include="AssemblyInfo.fs" />
     <Content Include="packages.config" />
     <Compile Include="src\ParserLib\Input.fs" />
-    <Compile Include="src\ParserLib\Parser.fs"/>
-    <Compile Include="src\HyraParser\HyraParser.fs"/> 
+    <Compile Include="src\ParserLib\Parser.fs" />
+    <Compile Include="src\HyraParser\Ast.fs" />
+    <Compile Include="src\HyraParser\HyraParser.fs" />
     <Compile Include="src\Program.fs" />
   </ItemGroup>
   <ItemGroup>

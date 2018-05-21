@@ -1,10 +1,43 @@
 module HyraParser
 
 open Parser
+open Ast
 
-let pIdentifier = (pLetter <?> pCh '_') .>>. !* (pDigit <?> pLetter <?> pCh '_')
-let pInt = (!+ pDigit) .>>. choice (List.map (!%) ["u32";"u64";"u16";"u8"; "s8"; "s16"; "s32"; "s64"; "u";"s"])
-let pFloat = (!* pDigit) .>>. (pCh '.') .>>. (!+ pDigit) .>>. !? (choice (List.map (!%) ["f";"d"] ))
+let pIdentifier = (pLetter <?> pCh '_') .>>. !* (pDigit <?> pLetter <?> pCh '_') |> merge <!> Expr.Ident
+let pInt = (!+ pDigit) .>>. choice (List.map (!%) ["u32";"u64";"u16";"u8"; "s8"; "s16"; "s32"; "s64"; "u";"s"])  |> merge <!> Literal.Int
+let pFloat = (!* pDigit) .>>. (pCh '.') .>>. (!* pDigit) .>>. choice (List.map (!%) ["f";"d"] ) |> merge <!> Literal.Float
 
-let pExpr = !% "expr"  
-let pNestedExpr = (pCh '(') >/>. pExpr .>> (pCh ')')
+let pLiteral =  choice [pFloat;pInt] <!> Expr.Literal
+
+
+let pExpr,pExprImpl = dec()       
+let pNested = (pCh '(') >/>. pExpr .>> (pCh ')') <!> Option.defaultValue Expr.Invalid
+
+let pPrefix = pPlaceholderFail
+let pPostfix = pPlaceholderFail
+
+let pPrimary = choice[pNested;pPrefix; pPostfix; pIdentifier; pLiteral]
+
+
+let pExprTempl opP p = p .>>. !*(opP .>>. p) <!> fun (a1,b)->
+    let rec comp xL root =
+        match xL with
+        | (op,a2)::xs -> BinaryExpr(root,op,a2)
+        | [] -> root
+    comp b a1
+        
+let rec applyExprTempl opTempls  = 
+    match opTempls with
+    | x::xs when List.isEmpty xs -> (x pPrimary) 
+    | x::xs -> x (applyExprTempl xs)
+    | [] -> failwith "Shouldnt happen..."
+
+// Static right now!
+let staticOps = [ pExprTempl (!% "+" <?> !% "-"); pExprTempl (!% "*" <?> !% "/")];
+
+let pBinary = applyExprTempl staticOps
+
+pExprImpl := pBinary 
+
+
+ 

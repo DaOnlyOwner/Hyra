@@ -13,7 +13,7 @@ type ErrorInformation = WhereBegin * WhereEnd * Note * Expected
 
 type Result<'a> = 
     | Ok of  'a * Input.InputState 
-    | Fail of ErrorInformation list    
+    | Fail of ErrorInformation list
 
 type Parser<'a> = {
     fn:Input.InputState -> Result<'a>
@@ -21,10 +21,6 @@ type Parser<'a> = {
     note : string option
     recoverMethod: InputState -> InputState
 }
-
-type ItemState<'a> =
-    | Valid of 'a
-    | Invalid
 
 let inline run parser state =
     parser.fn state
@@ -95,8 +91,9 @@ let emitError (info : ErrorInformation list) =
 
     List.iter (fun (xNew : ErrorInformation) -> 
         let (whereBegin , whereEnd , noteOption , expected) = xNew
-        let note = match noteOption with | Some(item) -> sprintf "Note: %s" item | None -> ""
-        cprintfn rootErrorColor "when parsing: %s, starting at line %i:column %i, ending at line %i:column %i.\n%s\n" expected whereBegin.lineNo whereBegin.colNo whereEnd.lineNo whereEnd.colNo note) xs
+        let note = match noteOption with | Some(item) -> sprintf "%sNote: %s" Environment.NewLine item | None -> ""
+        printf "when parsing (%i:%i-%i:%i): " whereBegin.lineNo whereBegin.colNo whereEnd.lineNo whereEnd.colNo
+        cprintfn rootErrorColor "%s%s\n" expected note) xs
     cprintfn headerTrailerError "========== ------------ =========="
     let (_,whereEnd,_,_) = List.head info
     whereEnd
@@ -106,7 +103,7 @@ let recover info method (input : Input.InputState) =
     let whereEnd = emitError info
     let newInput = {Input.InputState.text=input.text; Input.InputState.colNo = input.colNo; Input.InputState.lineNo = input.lineNo; Input.InputState.pos=whereEnd.pos}
     let inputAfterRecovery = method newInput
-    Ok(Invalid,inputAfterRecovery)
+    Ok(None,inputAfterRecovery)
 
 let skipUntil pred fromState =
     let rec inner input =
@@ -147,14 +144,12 @@ let renameRootError p1 (note,expected) =
 let recoverParser p1 =
     let inner input =
         match run p1 input with 
-        | Ok(item,newInput) -> Ok(Valid(item,newInput), newInput)
+        | Ok(item,newInput) -> Ok(Some(item,newInput), newInput)
         | Fail(info) -> recover info p1.recoverMethod input
     {fn=inner; expected = "e.e"; note = None; recoverMethod = recoverOne}
 
 
 // --- Combinators
-
-open System
 
 // BEGIN: TODO: REFACTOR    
 let andThen p1 p2 = 
@@ -185,7 +180,7 @@ let andThenLeft p1 p2 =
         | Fail(info) -> Fail(genError info input None exp)
     {fn=inner; expected = exp; note = None; recoverMethod = recoverOne}
 
-let inline (>>.) p1 p2 = andThenLeft p1 p2
+let inline (.>>) p1 p2 = andThenLeft p1 p2
 
 let andThenRight p1 p2 =
     let exp = sprintf "%s %s" p1.expected p2.expected
@@ -200,7 +195,7 @@ let andThenRight p1 p2 =
         | Fail(info) -> Fail(genError info input None exp)
     {fn=inner; expected = exp; note = None; recoverMethod = recoverOne}
 
-let inline (.>>) p1 p2 = andThenRight p1 p2
+let inline (>>.) p1 p2 = andThenRight p1 p2
     
 let andThenRecover p1 p2 = 
     let exp = sprintf "%s %s" p1.expected p2.expected
@@ -210,7 +205,7 @@ let andThenRecover p1 p2 =
         | Ok(item,newInput) -> 
             let res2 = run p2 newInput
             match res2 with
-            | Ok(item2,newInput2) -> Ok( Valid(item,item2), newInput2)
+            | Ok(item2,newInput2) -> Ok( Some(item,item2), newInput2)
             | Fail(info) -> recover info p2.recoverMethod newInput
         | Fail(info) -> Fail(genError info input None exp)
     {fn=inner; expected = exp; note = None; recoverMethod = recoverOne}
@@ -225,12 +220,12 @@ let andThenLeftRecover p1 p2 =
         | Ok(item,newInput) -> 
             let res2= run p2 newInput
             match res2 with
-            | Ok(_,newInput2) -> Ok( Valid(item), newInput2)
+            | Ok(_,newInput2) -> Ok( Some(item), newInput2)
             | Fail(info) -> recover info p2.recoverMethod newInput
         | Fail(info) -> Fail(genError info input None exp)
     {fn=inner; expected = exp; note = None; recoverMethod = recoverOne}
     
-let inline (>/>.) p1 p2 = andThenLeftRecover p1 p2
+let inline (.>/>) p1 p2 = andThenLeftRecover p1 p2
 
 let andThenRightRecover p1 p2 =
     let exp = sprintf "%s %s" p1.expected p2.expected
@@ -240,11 +235,11 @@ let andThenRightRecover p1 p2 =
         | Ok(_,newInput) -> 
             let res2 = run p2 newInput
             match res2 with
-            | Ok(item2,newInput2) -> Ok( Valid(item2), newInput2)
+            | Ok(item2,newInput2) -> Ok( Some(item2), newInput2)
             | Fail(info) -> recover info p2.recoverMethod newInput
         | Fail(info) -> Fail(genError info input None exp)
     {fn=inner; expected = exp; note = None; recoverMethod = recoverOne}
-let inline (.>/>) p1 p2 = andThenRightRecover p1 p2
+let inline (>/>.) p1 p2 = andThenRightRecover p1 p2
 
 // END: TODO: REFACTOR
 
@@ -325,8 +320,8 @@ let pWord (word:string) =
         let rec comp nextInput i =
             let (item,nextNewInput) = Input.next nextInput
             match item with 
-            | Some(inCh) -> if inCh <> word.[i] then Fail ( [input,nextNewInput,None,exp]), nextNewInput else comp nextNewInput (i+1)
-            | None -> Fail( [input,nextNewInput,Some("End of File"), exp]),nextNewInput
+            | Some(inCh) -> if  i >= word.Length || inCh <> word.[i] then Fail ( [input,nextInput,None,exp]), nextInput else comp nextNewInput (i+1)
+            | None -> Fail( [input,nextInput,Some("End of File"), exp]),nextInput
         let (_,newInput) = comp input 0
         Ok(word,newInput)      
     {fn=inner; expected = exp; note = None; recoverMethod = recoverOne}
@@ -343,23 +338,37 @@ let dec<'a>() =
     let actual = {fn = (fun x-> run !impl x); expected=""; note=None; recoverMethod = recoverOne}
     actual,impl
 
-(*
+let pPlaceholder<'a> = {fn = (fun input -> Ok(Unchecked.defaultof<'a>,input)); expected=""; note=Some("This is a placeholder"); recoverMethod=recoverOne}
+let pPlaceholderFail = {fn = (fun input -> Fail([input,input,None,""])); expected=""; note=Some("This is a placeholder"); recoverMethod=recoverOne}
+
+
+
 let merge p1 =
+    let inner input=
+        match run p1 input with
+        | Ok(item,newInput) -> Ok(Input.getRange input.text input.pos newInput.pos,newInput)
+        | Fail(info) -> Fail(info)
+    {fn=inner; expected=p1.expected;note=p1.note;recoverMethod=recoverOne}
+
+
+
+
+// Monadic stuff
+
+let bind func p1 = 
+    let exp = p1.expected
     let inner input =
-        let (res,newInput) = run p input 
-        let rec mergeInner p = 
-            | Ok(item, newInput) -> 
-                match item with
-                | :? List as L -> List.reduce (mergeInner L)
-                | :? string as S -> S
-                | :? char as C -> sprintf "%c" C
-                | :? Some(innerItem) -> mergeInner innerItem     
-                | :? _ -> _
-            | Fail(info) -> Fail(info)    *)
-            
+        match run p1 input with
+        | Ok(item,newInput) -> run (func item) newInput
+        | Fail(info) -> Fail(info)
+    {fn=inner;expected=exp; note=p1.note; recoverMethod=recoverOne}
 
+let (>>=) func p1 = bind p1 func
 
+let ret x = {fn = (fun input -> Ok(x,input)); expected = ""; note=None; recoverMethod=recoverOne}
+let map func = bind (func >> ret)   
 
+let (<!>) func p1 = map p1 func
 
 
 

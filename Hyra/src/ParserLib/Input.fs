@@ -34,6 +34,6 @@ let getPartitionLines (text : string) start end_ =
     let intermediate = getRange text pos1 pos2
     let append = text.Substring(pos2, if eol = -1 then text.Length-pos2 else eol-pos2)
     let prepend = text.Substring(pos1-start.colNo,start.colNo)
-    (append,intermediate,prepend)
+    (prepend,intermediate,append)
 
     
