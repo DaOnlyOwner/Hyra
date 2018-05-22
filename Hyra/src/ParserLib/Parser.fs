@@ -127,7 +127,8 @@ let toLeafError p1 (note,expected) =
         | Ok(item,newInput) -> Ok(item,newInput)
         | Fail(info) -> Fail( [leafError info input note expected] )
     {fn=inner; expected = expected; note = note; recoverMethod = recoverOne}
-    
+
+let inline (<.-.>) p1 (note,expected) = toLeafError p1 (note,expected)      
    
 let renameRootError p1 (note,expected) = 
     let inner input = 
@@ -139,14 +140,14 @@ let renameRootError p1 (note,expected) =
             Fail((whereBegin,whereEnd,note,expected)::info)
     {fn=inner; expected = expected; note = note; recoverMethod = recoverOne}
 
-
+let inline (<.^.>) p1 (note,expected) = renameRootError p1 (note,expected) 
 
 let recoverParser p1 =
     let inner input =
         match run p1 input with 
         | Ok(item,newInput) -> Ok(Some(item,newInput), newInput)
         | Fail(info) -> recover info p1.recoverMethod input
-    {fn=inner; expected = "e.e"; note = None; recoverMethod = recoverOne}
+    {fn=inner; expected = p1.expected; note = p1.note; recoverMethod = p1.recoverMethod}
 
 
 // --- Combinators
@@ -249,11 +250,11 @@ let orElse p1 p2 =
     let inner input =
         let res1 = run p1 input
         match res1 with 
-        | Ok(item,newInput) -> Ok(item,newInput)
+        | Ok(item1,newInput1) -> Ok(item1,newInput1)
         | _ -> 
             let res2 = run p2 input
             match res2 with 
-            | Ok(item,newInput) -> Ok(item,newInput)
+            | Ok(item2,newInput2) -> Ok(item2,newInput2)
             | Fail(info) -> Fail(genError info input None exp)
     {fn=inner; expected = exp; note = None; recoverMethod = recoverOne}
 
@@ -302,7 +303,38 @@ let sat pred expected note =
         |None -> Fail(  [(state,newState, Some("End of File") , expected)] )
     {fn=inner; expected = expected; note = note; recoverMethod = recoverOne}
        
-// Specific Combinators
+let maxMunch p1 p2 = 
+    let exp = sprintf "%s | %s" p1.expected p2.expected
+    let inner input =
+        let res1 = run p1 input
+        let res2 = run p2 input
+        match res1 with
+        | Ok(_,newInput1) -> 
+            match res2 with
+            | Ok(_,newInput2) -> 
+                if newInput1.pos >= newInput2.pos then res1 else res2
+            | Fail(_) -> res1
+        | Fail(_) ->
+            match res2 with
+            | Ok(_) -> res2
+            | Fail(info) -> Fail(genError info input None exp) 
+    {fn=inner; expected = exp; note = None; recoverMethod = recoverOne}
+
+let inline (<-?->) p1 p2 = maxMunch p1 p2  
+
+let choiceMax pList = List.reduce maxMunch pList
+
+open System.Collections.Generic
+let cache p1 =
+    let internalCache = new Dictionary<int,Result<'a>>()
+    let inner input = 
+        if internalCache.ContainsKey(input.pos) then internalCache.[input.pos] else
+            let res = run p1 input
+            internalCache.Add(input.pos,res)
+            res
+    {fn=inner; expected = p1.expected; note = p1.note; recoverMethod = p1.recoverMethod}
+
+let inline (!~) p1 = cache p1
 
 let pLetter = sat System.Char.IsLetter "<letter>" None
 let pDigit = sat System.Char.IsDigit "<digit>" None
@@ -317,13 +349,15 @@ let everythingExcept except =
 let pWord (word:string) = 
     let exp = sprintf "'%s'" word
     let inner (input : Input.InputState) =
+        printfn "%s" word
         let rec comp nextInput i =
             let (item,nextNewInput) = Input.next nextInput
             match item with 
-            | Some(inCh) -> if  i >= word.Length || inCh <> word.[i] then Fail ( [input,nextInput,None,exp]), nextInput else comp nextNewInput (i+1)
-            | None -> Fail( [input,nextInput,Some("End of File"), exp]),nextInput
-        let (_,newInput) = comp input 0
-        Ok(word,newInput)      
+            | Some(inCh) -> if  i = word.Length then Ok(word,nextInput) 
+                            else if inCh <> word.[i] then Fail ( [input,nextInput,None,exp]) 
+                            else comp nextNewInput (i+1)
+            | None -> Fail( [input,nextInput,Some("End of File"), exp])
+        comp input 0    
     {fn=inner; expected = exp; note = None; recoverMethod = recoverOne}
 
 
